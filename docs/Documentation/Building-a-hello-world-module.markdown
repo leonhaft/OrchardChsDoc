@@ -1,7 +1,6 @@
-This article describes how to build a very small module for Orchard that will just display a "hello world" page. The technique that it shows you is a great start if you are looking to take control of the page lifecycle with your own MVC controller.
+这篇文章描述如何创建一个简单的只显示"Hello World"页面模块。这个方法很好的展示如何控制页面的生命周期。
 
-Another simple example of a module can be found here: [Quick Start - Get module blueprint](http://orchardjumpstart.codeplex.com/)
-
+另一个简单的模块示例:[Quick Start - Get module blueprint](http://orchardjumpstart.codeplex.com/)
 > **This guide has been marked for review.** If you are just getting started with Orchard module development you should read the [Getting Started with Modules course](Getting-Started-with-Modules) first. It will introduce you to building modules with Orchard using Visual Studio Community, a free edition of Visual Studio. 
 
 # Introduction
@@ -12,13 +11,15 @@ MVC is a pattern where concerns are neatly separated: there is a model (M) for t
 
 In the case of our Hello World module, we won't have any data so the model will be of no concern to us. We will just have a controller and a view. All the rest will be some necessary plumbing to declare what we're doing to Orchard. We will come back to these concepts and recapitulate once we've built our module.
 
-Modules in Orchard are sets of extensions that can be packaged in order to be re-used on other Orchard sites. Modules are implemented as MVC Areas. Areas in MVC are sub-sites that contain a set of features that act in relative isolation from the other parts of the site. An Orchard module is simply an area with a manifest file. It may use Orchard APIs (but it doesn't necessarily have to).
+
+Orchard模块是一系列扩展，可以在其他Orchard站点中重用。模块是通过[MVC Areas](https://docs.asp.net/en/latest/mvc/controllers/areas.html)来实现的.
+一个Orchard模块是一个包含一个清单文件的简单area. 模块可以使用Orchard APIs(但这并不是必须的).
+
 
 # Generating the Module Structure
 
-Before you can generate the file structure for your module, you need to download, install, and enable the **Code Generation** feature for Orchard. For more information, see [Command-line Code Generation](Command-line-scaffolding).
-
-Once you have code generation enabled, open the Orchard command-line, and create the `HelloWorld` module with the following command:
+在生成模块文件结构之前，需要下载安装并启用 **Code Generation** 模块,更多信息,参考[Command-line Code Generation](Command-line-scaffolding)
+启用之后,打开Orchard命令行，通过下面的命令创建一个名为`HelloWorld`的模块：
 
     
     codegen module HelloWorld
@@ -27,6 +28,7 @@ Once you have code generation enabled, open the Orchard command-line, and create
 # Modifying the Manifest
 
 You should now have a new HelloWorld folder under the Modules folder of your Orchard web site. In this folder, you'll find a module.txt file. Open it and customize it as follows:
+在Orchard Web站点的Modules文件夹下已经生成了一个HelloWorld文件夹, 在这个文件夹有一个module.txt的文件，打开并自定义成如下:
 
     
     name: HelloWorld
@@ -42,14 +44,13 @@ You should now have a new HelloWorld folder under the Modules folder of your Orc
             Category: Sample
 
 
-This text file is describing your module to the system. The information contained in this file will be used for example in the features administration screen.
+这个文本文件是描述我们的模块. 其中的信息会在管理页面中使用.
 
-> Note: While both spaces and tabs are supported to indent the manifest file, we recommend that you use spaces instead of tabs. As with your main coding, using spaces gives a more consistent editing experience when working in teams.
+> Note: 清单文件支持空格和tab缩进, 推荐使用空格。
 
 # Adding the Route
 
-Your module will have to handle the /HelloWorld relative URL under your Orchard web site. In order to declare what to do when that URL gets hit, create the following Routes.cs file in the HelloWorld folder:
-
+HelloWorld模块需要处理/HelloWorld相对Url, 为此需要在HelloWorld文件夹中创建Routes文件定义路由。
     
     using System.Collections.Generic;
     using System.Web.Mvc;
@@ -86,7 +87,7 @@ Your module will have to handle the /HelloWorld relative URL under your Orchard 
     }
 
 
-A route is a description of the mapping between URLs and controller actions. This code maps the HelloWorld URL to the area HelloWorld with the Home controller and the Index action.
+这个路由描述了Url与controller actions的映射, 上述代码将地址HelloWorld映射到area HelloWorld的Home Controller的Index action。
 
 # Creating the Controller
 
@@ -108,7 +109,7 @@ The new module also has a Controllers folder ready to be filled. Create the foll
 
 This is the controller that will handle the requests for the HelloWorld URL. The default action, index, is requesting that the HelloWorld view gets rendered.
 
-Notice the Themed attribute on the controller class that will request that the view gets skinned with the currently active theme.
+注意controller类的Themed属性，它是请求当前主题视图
 
 # Creating the View
 
@@ -121,6 +122,7 @@ In the Views folder, create a folder named Home. In the Views\Home folder, creat
 This file is specifying the core contents of our view. All the chrome around it will get added by the current theme's default layout.
 
 Notice that we used the T helper function that makes this view ready to be localized. This is not mandatory but it's a nice touch.
+这里使用了T帮助方法来实现本地化，这不是强制的。
 
 # Adding the new files to the project
 
@@ -144,6 +146,7 @@ Also add the following to the ItemGroup section that already has other Content t
 # Activate the Module
 
 Finally, you need to activate your new module. In the command line, type:
+最后我们需要启用这个模块，可以通过下面的命令, 也可在模块管理页面点击启用
 
     
     feature enable HelloWorld

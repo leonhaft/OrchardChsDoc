@@ -6,7 +6,6 @@ It will teach you some of the basic components of module development and also en
 If you haven't read the previous part of this course then you can go back to the overview to [learn about the Getting Started with Modules course](Getting-Started-with-Modules).
 
 ## Expanding the widget to make it more dynamic
-In the first version of the widget we took the bare minimum of steps that we could in order to get something up and running.
 
 This meant we missed out a few classes that would be in a normal data-driven module and some of the classes we did add were pretty much empty.
 
@@ -129,11 +128,13 @@ The `Retrieve()` and `Store()` methods come when you inherit from `ContentPart<T
 Under the hood your data is stored in two places. There is the underlying database and something called the infoset.
 
 ## Understanding data storage in Orchard
-Orchard provides an incredibly modular architecture. The way it achieves this is that it breaks everything up into their own little components called content parts. We are busy building one of these content parts right now. Orchard composes these together at run-time to form content types, such as the widget we are working on.
 
-In order to store all of these little pieces of data in the database they are split up into many tables. There can be a lot of SQL `JOIN`'s involved with pulling a content item out of the database. This means things aren't always as fast as they could be.
+Orchard提供了一个不可思议的模块化结构。做到这一点的方法是把一切切成小的组件，称为内容组件。Orchard在运行时构建这些内容组件.
 
-To minimize these effects a secondary data cache is kept. All of the different content parts are encoded into XML and stored in a single column inside a database table. For example, our widget looks something like this:
+
+为了在数据库存储这些所有数据组件，这些数据分割在多个表. 从数据库中获取这些数据将会有很多 `JOIN`. 这意味着这不是最快的方式.
+
+通过建立为一个二级数据缓存减少这些影响到最小。所有不同内容部件都编码到一个XML文件，然后存储到数据库表的一列，例如: 
 
     <Data>
       <IdentityPart Identifier="0e8f0d480f0d4d4bb72ad3d0c756a0d4" />
@@ -144,24 +145,21 @@ To minimize these effects a secondary data cache is kept. All of the different c
         Zone="AsideFirst" Name="" CssClasses="" />
     </Data>
 
-So instead of pulling data from three different tables (IdentityPart, CommonPart and WidgetPart) Orchard just selects the single XML block and checks in there. The `Retrieve()` and `Store()` methods automatically keep this data and the individual database tables in sync for you.
 
-Why not just use the XML infoset all the time? If you need to sort the data or filter it then its actually quicker to do this all within the SQL database server rather than extracting everything and sorting / filtering it after.
+为了替换从3个表(IdentityPart, CommonPart and WidgetPart)里面获取数据, Orchard只是查询一个xml区块。
+`Retrieve()`和`Store()`方法自动存储数据。
 
-> In certain scenario's you might not need one or the other of these data stores. There are more advanced approaches that you can take in these situations but that's an advanced topic for a later guide.
-
-This changeover was implemented in Orchard v1.8 and was known as "The Shift". Bertrand Le Roy has [written more about this on his blog](http://weblogs.asp.net/bleroy/the-shift-how-orchard-painlessly-shifted-to-document-storage-and-how-it-ll-affect-you).
 
 ## Upgrading using a data migration
-In the first part of this course we created a `Migrations.cs` class file. Inside it we wrote the `Create()` method which returned `1`. When Orchard had finished running the method it stored that `1` in the database.
 
-Now that we want to make some changes to our modules data storage (we want to add in a table for the data to be stored in) we can add a new method `UpdateFrom1()`. Orchard will automatically find this method the next time the site is loaded and run this updated data migration.
+在第一部分课程我们创建了`Migrations.cs`，这个类的`Create()` 返回了`1`, 当Orchard执行完这个方法，它将存储 `1` 到数据库.
 
-At the end of the update method we will return `2`. This means in the future if we want to make further changes we could add an `UpdateFrom2()` method. We can keep returning a number one higher than the previous to update as many times as we need.
 
-  1. Open the `Migrations.cs` file in the root folder of the module.
+现在我们对模块的数据存储进行一些修改，我们添加一个表来存储数据。我们添加一个新的方法 `UpdateFrom1()`. Orchard会在下次站点加载时自动找到该方法，并运行这次数据迁移。这个方法的最后我们返回 `2`，这表示未来如果我们修改，可以添加`UpdateFrom2()`方法。我们可以返回一个更高的数字。
+
+  1. 打开 `Migrations.cs` .
   
-  1. Beneath the `Create()` method, add in the following method:
+  1. 在  `Create()` 方法下面, 添加如下方法:
   
         public int UpdateFrom1() {
           SchemaBuilder.CreateTable(typeof(FeaturedProductPartRecord).Name,
@@ -171,25 +169,12 @@ At the end of the update method we will return `2`. This means in the future if 
           return 2;
         }
 
-To start off with we are using the `SchemaBuilder` class to create a new table. The first parameter is the table name. This should match the ContentPartRecord we built.
 
-> Instead of pulling it out using `typeof().Name` you could pass in a string such as `CreateTable("FeaturedProductsPartRecord", ...);` but that leaves you open to introducing small typos into the code - like I did just then. 
+我们使用`SchemaBuilder`类来创建一个新表。第一个参数是表的名称，这将匹配我们创建ContentPartRecord。
+
 
 > **Did you notice the extra `s` I accidentally typed into the table name?**
-
-> If you make a mistake like this then you won't get an exception. Orchard will still run but your data will be saved to the wrong table creating hard to find bugs.
-
-The `ContentPartRecord()` call is just a simple shorthand to add in the `id` column. If you look in the definition (just place your cursor in the method in Visual Studio and press `F12`) you will see it simply adds an extra `Column<>` into the chain:
-
-    Column<int>("Id", column => column.PrimaryKey().NotNull()); 
-
-We then add our column with a data type `bool` and a name `IsOnSale` which matches our property on the record class. `NHibernate` will automatically match the name of the property on the record class with the column in the database.
-
-> **Bonus Exercise:** Look around in the `Migrations.cs` files located in the other built-in modules for many examples of the things you can do with this class.
-
->  To do this just select the `Search Solution Explorer` textbox at the top of the `Solution Explorer` or press `Ctrl-;`. When it's selected just type `Migrations.cs` in and it will filter out all of the `migrations.cs` files in the solution.
-
-You should now end up with a `Migrations.cs` file that looks like this:
+>   `Migrations.cs` 看起来如下:
 
     using Orchard.ContentManagement.MetaData;
     using Orchard.Core.Common.Models;
@@ -222,66 +207,37 @@ You should now end up with a `Migrations.cs` file that looks like this:
     }
 
 ## Add a handler
-The plumbing for connecting the module code to the database is almost complete. The last thing to do is to register a `StorageFilter` for the `ContentPartRecord`.
+探究连接模块代码与数据库快要完成了。最后为 `ContentPartRecord`注册 `StorageFilter`.
 
-The `StorageFilter` class takes care of persisting the data from repository object to the database. In this case it's the `FeaturedProductPartRecord` class that needs registering.
+`StorageFilter`类仓储对象持久化到数据库，在这个例子中`FeaturedProductPartRecord` 是我们需要注册的类。
 
-You do this registration inside the `Handler` class, although that's not it's only use. You can think of the handler like a filter in ASP.NET MVC. It's a piece of code that is meant to run when specific events happen in the application, but that are not specific to a given content type. 
+在`Handler`内注册，尽管这不是这个类的唯一作用。可以把这个类当成ASP.MVC的过滤器。这是用于处理特定事件发生，但没有指定content类型。
 
-For example, you could build an analytics module that listens to the `Loaded` event in order to log usage statistics. 
+举个例子，建立一个分析模块去监听`Loaded` 事件来记录使用。
+模块里的这个handler并不是很复杂，但是它要实现一些来支持持久化。
 
-> If you're curious, you can see what event handlers you can override in your own handlers by examining the source code for `ContentHandlerBase` and reading the [understanding content handlers](/Documentation/Understanding-content-handlers) guide.
-
-The handler you need in this module is not going to be very complex, but it will implement some plumbing that is necessary to set up the persistence of the part:
-
-  1. In the `Solution Explorer`, right click on the `Orchard.LearnOrchard.FeaturedProduct` project and choose `Add`, `New Folder` and create a new folder called `Handlers`.
+  1. 在模块项目创建 `Handlers`文件夹. 然后在这个文件夹下添加类`FeaturedProductHandler`
   
-  1. Now right click on the `Handlers` folder and choose `Add`, `Class...`.
-  
-  1. In the `Add New Item` dialog enter `FeaturedProductHandler` in to the `Name:` field and press `Add`.
-  
-  1. Derive the class from `ContentHandler`:
+  1. 使之继承 `ContentHandler`，然后添加引用:
   
          public class FeaturedProductHandler : ContentHandler
-         
-  1. Add the namespace by pressing `Ctrl-.`:
   
-      ![](../Attachments/getting-started-with-modules-part-2/handler-addusing.png)
-  
-  1. You now need to add in the standard boilerplate handler constructor code which wires up the `StorageFilter` to the repository:
+  1. 我们现在需要添加一个标准样板构造函数:
   
         public FeaturedProductHandler(
           IRepository<FeaturedProductPartRecord> repository) {
             Filters.Add(StorageFilter.For(repository));
         }
         
-  1. Add the namespace for the `FeaturedProductPartRecord` and then the `IRepository<>`.
-
-You should now end up with a `FeaturedProductHandler.cs` file that looks like this:
-
-    using Orchard.ContentManagement.Handlers;
-    using Orchard.Data;
-    using Orchard.LearnOrchard.FeaturedProduct.Models;
-    
-    namespace Orchard.LearnOrchard.FeaturedProduct.Handlers {
-      public class FeaturedProductHandler : ContentHandler {
-        public FeaturedProductHandler(
-          IRepository<FeaturedProductPartRecord> repository) {
-            Filters.Add(StorageFilter.For(repository));
-        }
-      }
-    }
-
 ## Update the driver to support an editor view
-This time through with the driver it's going to get it's other two core boilerplate methods.
+这次通过这个驱动来获取另外2个样板方法。
+第一个方法是`Editor()`, 用于构建显示在管理页编辑shape，这是个`GET`请求
 
-The first is a method called `Editor()` which is used to build the shape which will display the edit interface in the admin dashboard. This is designed to be used with a HTTP `GET` request.
+第二个方法是 `Editor()` ，它重载用于处理表单提交，将数据提交到数据库，这是`POST`请求。
 
-The second is another `Editor()` overload which takes the submitted information from the first and attempts to pass that information back into the database. This is designed to be used with a HTTP `POST` request.
-
-  1. Open the `FeaturedProductDriver.cs` class which is in the `.\Drivers\` folder of the module project.
+  1. 打开文件夹 `.\Drivers\`下的`FeaturedProductDriver.cs`.
   
-  1. Below the `Display()` method, paste in this block of code:
+  1. 在 `Display()` 方法下, 粘贴下面代码:
   
         protected override DriverResult Editor(FeaturedProductPart part, 
           dynamic shapeHelper) {
@@ -298,13 +254,12 @@ The second is another `Editor()` overload which takes the submitted information 
             return Editor(part, shapeHelper);
         }
         
-  1. Add the namespace for `IUpdateModel` using the `Ctrl-.` keyboard shortcut.
+按照上面介绍，第一个`Editor()`方法，用于在管理页展示编辑表单。它返回了一个名为`Parts_FeaturedProduct_Edit`的content shape. 我们稍后在更新`placement.info`会利用这些信息。
 
-As explained above, the first `Editor()` method is for displaying an edit form in the admin dashboard. You can see that it returns a content shape called `Parts_FeaturedProduct_Edit`. We will use this information later on when updating the `placement.info`. 
 
-The way it does it is by using the provided `shapeHelper` factory to create a new shape for the current content part (our FeaturedProductPart with the `bool IsOnSale` property). This is the same shape factory we used in our `Display()` method the first time around.
+我们利用`shapeHelper`工厂来为当前content part(我们的FeaturedProductPart)创建一个shape，这和用于`Display()`方法的工厂一样。
 
-For editor views you use the `.EditorTemplate()` method and pass in the configuration values. By default, Orchard places all of its editor views in the `EditorTemplates` folder. Combining this with the `TemplateName` parameter we know that we will be creating a view called `.\Views\EditorTemplates\Parts\FeaturedProduct.cshtml` in the next section.
+使用`.EditorTemplate()` 方法来传递设置值。默认，Orchard将所有编辑视图放在`EditorTemplates` 文件夹。
 
 The `Model` parameter passes in the data, in our case a data structure that includes the `IsOnSale` value. This will be accessible inside the Razor view and we will use it to determine what to display.
 

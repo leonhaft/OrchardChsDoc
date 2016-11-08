@@ -27,11 +27,11 @@ If you get stuck or need some support at any point in the course there are sever
 
 ## Setting up
 First things first, you need to follow the [setting up for a lesson](Setting-up-for-a-lesson) guide.
-
-This will take you through the initial steps to set up your dev environment and pull a fresh copy of the source code down. When you've completed it please use your back button to come back to this course.
+首先，需要按照[指导](Setting-up-for-a-lesson)完成环境的搭建
        
 ## Getting the most out of this course
 Writing an Orchard module that actually does something is going to contain a *minimum* of 9 different files. You will need to do a lot of development before you can run your module code and see it working in Orchard.
+
 
 At first you might be overwhelmed by this, but here is a little tip; don't be. Just forge ahead with the tutorial and don't worry if terms like drivers, content parts, or placements seem unfamiliar at the moment. As you continue with your module development you will come across these files many times over. Before long you will start recognizing these core files and you will see how it all fits together.
 
@@ -125,18 +125,26 @@ The basic framework for a module now exists inside the modules section of your s
 ## Core concepts refresher
 If you are at the stage of wanting to build modules for Orchard then you should already be familiar with the concept of Content Types, Widgets, Content Items and Content Parts. These are all things that you can manage via the admin dashboard and you will have worked with them if you have built any kind of site in Orchard. To refresh your memory:
 
-  - **Content Type**: The template for a type of content in Orchard. The most common example is the `Page` content type which provides the structure for a page of content in an Orchard site. 
+  - **Content Type**: 一个content模板，最普通的一个例子是`Page`
+
   
   - **Widgets**: You can also make a content type that works as a `Widget`. The `Widget` is a special variation of content type which can be placed into one of the many `Zones` a template defines. It's manageable via the admin dashboard at run-time. Content types can opt-in to this system by configuring their `Stereotype` setting to `Widget`.  
+`Widget` 是个特殊content类型，它可以放入 `Zones`,它可以通过管理页面在运行时设置。
+
   
   - **Content Item**: This is an instance of a specific content type. When you create a new `Page` in Orchard and fill it with content that is a `Content Item` with a `Content Type` of `Page`.
+
+  这是一个特别content实例，创建`Page`时，`Content Item` 用于填充
   
   - **Content Part**: A small module providing some specific functionality. The `Content Type` is made up by attaching various `Content Parts` to it. For example you could have a comments content part. It just manages a block of comments for whatever it is attached to. The same comments content part could be attached to a `Page` content type, a `Blog` content type, or within a `Widget`.
+一个小的模块提供一些特定功能。`Content Type`是由不同的`Content Parts`组成.例如评论，它只是提供一个评论功能，它同样可以放入`Page`、`Blog`或 `Widget`。
+
 
 ## What we will be building
 As you might have guessed from the module name, we are going to build a very simple featured product module. This first step into extending Orchard will be a small one. 
 
-The featured product module will be a `Widget` which shows a static message listing the featured product with a link to that page. It's not going to have any configurable settings behind it so we won't need to look at the database side of things yet. It's not going to be powered by an actual product system. A `Widget` is a great starting pointing point because it doesn't need to worry about menu settings, titles, URLs or integration into the admin dashboard.
+
+这个模块是一个`Widget` ，它将显示一个特色商品静态信息列表。它没有任何可定制设置。也不需要查看数据库。`Widget` 是一个很好的开始点，因为它不需要担心菜单设置，标题，URLS或整合到管理页面
 
 It will be a simple banner which you can display on your site by adding a widget via the admin dashboard. This will be enough to show the core concepts of a module. We will come back and make improvements in the next three parts of this course.
 
@@ -159,39 +167,26 @@ The content part class is the core data structure. When you scaffolded the modul
   
 Your new class will be created and opened up in the Visual Studio editor.
 
-> **Important note:** In order for Orchard to recognize Content Part classes they must be in a namespace ending `.Models`. 
+> **Important note:** 为了Orchard组织内容部分类，这些类的命名空间必须以`.Models`结尾
 
-> Because you already added this class within the `Models` folder the namespace is automatically wrapped around your class. In the future, when you're making your own classes don't forget to ensure that you follow this namespace structure.
+content part类需要继承 `ContentPart` class.
 
-Your content part class will need to derive from the `ContentPart` class.
-
-Normally we would add public properties to store all the related data but as we are keeping it simple this first example won't have any.
+通常我们会添加公共属性用于存储所有相关的数据，但此示例没有。
 
 ![](../Attachments/getting-started-with-modules-part-1/contentpart-add-inheritance.png)
 
-Add the `ContentPart` inheritance by following these steps:
-
-  1. Type ` : ContentPart` after your `FeaturedProductPart` class definition to inherit from the `ContentPart` class.
-  
-  1. Wait a second and the red squiggles will appear underneath the class. Add the namespace by pressing `Ctrl-.` on your keyboard to bring up the Quick Actions menu.
-  
-  1. Select the `using Orchard.ContentManagement;` option and press `enter`.
-    
-That's all you need to do for your first `ContentPart` class. Your `FeaturedProductPart.cs` file should now look like this:
- 
-    using Orchard.ContentManagement;
-    
-    namespace Orchard.LearnOrchard.FeaturedProduct.Models {
-        public class FeaturedProductPart : ContentPart {
-        }
-    }
 
 ## Data migrations
-When your module is enabled in the admin dashboard Orchard will execute a data migration process. The purpose of the data migration is to register a list of the features contained in the module and any data it uses.
 
-We aren't going to use this yet, but the migration is also used for upgrades. As you work on your modules you will want to add and remove bits. The data migration class can make changes and you can transform your existing data to meet your new requirements.
+当模块在管理页面启用后，Orchard会执行一个数据迁移。数据迁移的目的注册模块中使用数据。
+
+
+我们暂时不使用这个功能，但是这个迁移同样用于升级。数据迁移类可修改，也可以转换已有的数据来满足新的要求。
+
 
 The data migration class can be created by hand, following a similar process as the last section but we can also scaffold it with the `orchard.exe` command line. Let's dive back in to the command line and add a data migration class to the module.
+
+数据迁移类可手动创建，可以通过之前的`orchard.exe` 命令行:
 
   1. Press the `Save All` button (or press `Ctrl-Shift-S`). Its a good practice to always save before using the command line utility. Many of its commands will make changes to your solution and if you have unsaved changes you will get merge conflicts.
   
@@ -237,15 +232,17 @@ The data migration class can be created by hand, following a similar process as 
     
     > **Note:** If you had unsaved changes in your Solution file then click the `Dismiss` option and add the class manually. In the Solution Explorer, `right click` on the `Orchard.LearnOrchard.FeaturedProduct` folder. Choose `Add`, `Existing Item`, then navigate to `.\src\Orchard.Web\Modules\Orchard.LearnOrchard.FeaturedProduct\`, select `Migrations.cs` and press `Add`.
 
-Now you have a `Migrations.cs` file in the root folder of your module's project. By default it has an empty method called `Create()` which returns an `int`. For the moment, returning a value of `1` is fine. It's the version number of your data migration and we will look into it in more detail later in this course.
 
-As discussed earlier the `Widget` is just a `ContentType` with a `Stereotype` of `Widget`. A `ContentType` is basically just a collection of `ContentPart`s. Every `ContentType` should contain the `CommonPart` which gives you the basics like the owner and date created fields. We will also add the `WidgetPart` so it knows how to widget. Finally we also include the content part we are building, `FeaturedProductPart`.
+模块根目录文件夹下已经有了`Migrations.cs`文件，默认包含一个空的只返回整型的`Create()`方法. 
 
-Let's update the `Create()` method to implement these plans:
+之前讨论的 `Widget` 是一个`ContentType` with a `Stereotype` of `Widget`.A `ContentType` 只是 `ContentPart`集合。每个`ContentType` 应该包含`CommonPart`，它将提供一些基本例如所有者和创建日期字段。我们需要添加`WidgetPart`。最后我们添加 `FeaturedProductPart`.
 
-  1. Open `Migrations.cs` from within your module project if you don't already have it open.
+
+现在我们更新`Create()`方法来实现下列计划:
+
+  1.打开`Migrations.cs`
   
-  1. Replace the `Create()` method with the following:
+  1. 用以下内容替换 `Create()` :
   
         public int Create() {
           ContentDefinitionManager.AlterTypeDefinition(
@@ -259,27 +256,9 @@ Let's update the `Create()` method to implement these plans:
         
      Orchard doesn't have a `CreateTypeDefinition` method so even within the create we still used `AlterTypeDefinition`. If it doesn't find an existing definition then it will create a new content type.
    
-  1. Press `Ctrl-.` on the red squiggles under `FeaturedProductPart` and `CommonPart` then let Visual Studio add the required `using` statements.
+  1.添加相关引用
    
-  1. Try the same under the `WidgetPart` - you will see Visual Studio doesn't understand where to point the `using` statement at and it only offers you options to generate stubs. We don't want this.
-  
-    ![](../Attachments/getting-started-with-modules-part-1/datamigrations-unknownnamespace.png)
-   
-  1. `Right click` on your `References` and choose `Add Reference...`
-   
-     ![](../Attachments/getting-started-with-modules-part-1/datamigrations-addreference.png)
-     
-  1. Click the `Projects` tab on the left. Scroll down until you can see `Orchard.Widgets` in the list. `Hover` your mouse over it and a checkbox will appear. Click the checkbox for  `Orchard.Widgets`. Click `OK`.
-  
-     ![](../Attachments/getting-started-with-modules-part-1/datamigrations-orchardwidgets.png)
-     
-  1. Now you can try resolving the red squiggly lines under `WidgetPart` again:
-  
-     ![](../Attachments/getting-started-with-modules-part-1/datamigrations-widgetusing.png)
-     
-     You will now have the correct `using Orchard.Widgets.Models` option presented to you. Select it.
-
-  1. Save your progress so far by clicking the `Save all` button (or press `Ctrl-Shift-S`).
+  1. 添加`Orchard.Widgets`项目引用
   
 That's all for the data migration, your `Migrations.cs` should now look like this:
 
@@ -305,66 +284,70 @@ That's all for the data migration, your `Migrations.cs` should now look like thi
     }
 
 ## Update dependencies as you go along
-In the `Create()` method of the data migration we introduced a dependency on `WidgetPart`.
 
-This means that our module won't run without the `Orchard.Widgets` module being installed and enabled within the system.
 
-In order to let Orchard know that we have this dependency we need to record it in a manifest file called `Module.txt`. This is a text file written in YAML format which stores meta information about the module like the name, author, description and dependencies on other modules. If you haven't heard of YAML before don't worry, it is a simple format to understand.
+在 `Create()`里我们在 `WidgetPart`引入了一个依赖。
 
-We will look at the `Module.txt` manifest file again in more detail in part 4 of this course, for now we just need to go in and record the dependency we have created with `Orchard.Widgets`. 
+这表示我们的模块不能离开`Orchard.Widgets`而运行。
 
-It is important to record this information as soon as we make a dependency on a module. If we don't record the information then your module can cause exceptions for your users at run-time. You really need to get into the habit of doing it straight away because not only are they are easy to forget but if you have the module that you depend on already enabled you won't see any errors but your users will.
 
-Lets update the manifest now to include the `Orchard.Widgets` dependency:
+为了让Orchard知道我们引入了这个依赖，我们需要在清单文件(`Module.txt`)中记录它。
+这是个YAML格式，它存储了模块的元数据，包括名称、作者、描述、依赖。
 
-  1. In the solution explorer, open up `Module.txt` which will be located in the root folder of the module.
+
+>注意:在模块添加引用后必须马上在清单文件中记录，如果不记录这个信息，将会在运行时引起异常
+
+让我们更新这个清单文件以记录`Orchard.Widgets` 依赖：
+
+  1. 打开 `Module.txt`
   
-  1. The last three lines describe the main feature of the module (we have only one feature in this module): 
+  1. 最后的3行 (因为这只有一个模块): 
   
          Features:
              Orchard.LearnOrchard.FeaturedProduct:
                  Description: Description for feature Orchard.LearnOrchard.FeaturedProduct.
     
-     Add an extra row underneath `Description:` and add a `Dependencies:` entry like this:
+
+     在`Description:`后面添加一行，然后添加如下:
      
          Features:
              Orchard.LearnOrchard.FeaturedProduct:
                  Description: Description for feature Orchard.LearnOrchard.FeaturedProduct.
                  Dependencies: Orchard.Widgets
                  
-      The indentation is important as creates hierarchy within a YAML document. Indent the line with 8 spaces.
       
 ## How is all this magic working?
 So far the `ContentPart` class has been magically detected as long as it uses the `.Model` namespace, now the data migration is automatically detected just for deriving from `DataMigrationImpl`. How is all of this happening?
 
-Under the hood Orchard uses [Autofac](http://autofac.org/), an Inversion of Control container. If you're interested you can learn about how it's integrated in the [how Orchard works](How-Orchard-works) guide. 
 
-Don't worry though, you don't really need to know anything deeper about it other than it's in the background and it automatically scans & registers your components for you.
+Orchard使用[Autofac](http://autofac.org/)，一个控制反转容器。如果有兴趣了解可查看Orchard整合[how Orchard works](How-Orchard-works).
 
-Later on we will use Autofac's dependency injection which let us automatically get instances of things we need supplied directly into our classes.
 
 ## Content part driver
-Everything you see in Orchard is composed from `Shapes`. If you don't know about shapes you can learn more about them in the [accessing and rendering shapes](Accessing-and-rendering-shapes) guide. 
+Everything you see in Orchard 由 `Shapes`构成. 可查看 [accessing and rendering shapes](Accessing-and-rendering-shapes) guide. 
 
-A content part driver is a class that composes the shapes that should be used to view and edit content parts. Drivers live in their own folder called `Drivers`. A basic driver class will contain three methods; a display driver for viewing a content part in the front end, an editor driver for presenting an editor form in the admin dashboard and an update method to handle changes submitted from the editor form.
 
-As the shapes are created in the driver you can also pass data through to a view. Views are discussed in the next section but first we need to wire in the plumbing.
+一个content部件驱动是一个类，它构成了shapes，它可以用于查看编辑content部件。一个基本驱动类包含3个方法，一个用于前端视图展现显示驱动，一个用于在管理页编辑表单编辑驱动和一个用于处理表单提交方法。
 
-The widget that we are building has no configuration, so all this driver will need is the `Display` method configuring. The other methods will be added in when we revisit the widget it part two.
+
+
+在驱动里创建shapes，可以向视图传递数据。视图将在下个章节讨论。
+
+
+我们正在创建的部件没有可配置项，所以这个驱动只需要`Display` 方法。其他方法将在第二部分再查看。
 
 There aren't any command line scaffolding commands for setting up new drivers so you will need to create it manually:
 
-  1. Make a new `Drivers` folder (`Right click` on the module project in the solution explorer, click `Add`, `New Folder`)
+我们没有命令行来创建一个新的驱动，所以我们需要手动:
+
+  1. 创建 `Drivers` 文件夹
   
-  1. Add a new class called `FeaturedProductDriver` by right clicking the `Drivers` folder, clicking `Add`, `Class...` and typing `FeaturedProductDriver` for the name (Visual Studio will automatically add the `.cs` on to the end for you) 
-  
-     ![](../Attachments/getting-started-with-modules-part-1/driver-addclass.png)
+  1. 添加新类 `FeaturedProductDriver` 
      
-  1. Extend the class so it derives from `ContentPartDriver<FeaturedProductPart>` (note that the generic type class ends in Part not Driver).
+  1. 扩展这个类使其继承`ContentPartDriver<FeaturedProductPart>`.
   
-  1. Add the missing namespaces using the `Ctrl-.` shortcut.
-  
-In the future we will do a lot with the driver class and the way that it builds its display but for this simple example all we need is a simple class to wire the shape to a view.
+
+未来我们会在这个驱动做其他很多工作. 当前只需要简单来衔接shape到视图。修改这个类:
 
    1. Inside your `FeaturedProductDriver` class add this single method:
    
@@ -374,33 +357,19 @@ In the future we will do a lot with the driver class and the way that it builds 
             shapeHelper.Parts_FeaturedProduct());
         }
 
-This says that when displaying the `FeaturedProductPart` return a shape called `Parts_FeaturedProduct`. By default Orchard will look for this shape in  `Views\Parts\FeaturedProduct.cshtml` which is what we will build next.
-
-Your `FeaturedProductDriver.cs` file should now look like this:
-
-    using Orchard.ContentManagement.Drivers;
-    using Orchard.LearnOrchard.FeaturedProduct.Models;
-    
-    namespace Orchard.LearnOrchard.FeaturedProduct.Drivers {
-        public class FeaturedProductDriver : ContentPartDriver<FeaturedProductPart> {
-            protected override DriverResult Display(FeaturedProductPart part,
-              string displayType, dynamic shapeHelper) {
-                return ContentShape("Parts_FeaturedProduct", () =>
-                  shapeHelper.Parts_FeaturedProduct());
-            }
-        }
-    }
+方法表示当展示`FeaturedProductPart`时返回一个`Parts_FeaturedProduct`shape。
+默认Orchard将在`Views\Parts\FeaturedProduct.cshtml` 检查这个shape。
 
 ## View
-Orchard uses Razor template views to display it's shapes. You can supply strongly-typed data models and use many of the normal ASP.NET MVC Razor view features within Orchard.
+Orchard使用Razor模板来显示它的shapes. 我们可以提供强类型数据模型。
 
-For this first widget our needs are simple and we will only be putting plain HTML markup inside the `.cshtml` file:
+创建视图
 
-  1. Add a new folder inside the `Views` folder called `Parts` (`Right click` on the `View` folder in the solution explorer, click `Add`, `New Folder` and type `Parts`).
+  1. 在`Views` 文件夹添加 `Parts`文件夹.
   
-  1. Add a new `.cshtml` Razor view within the `Parts` folder called `FeaturedProduct.cshtml`
+  1. 在`Parts`文件夹添加 `FeaturedProduct.cshtml`.
   
-  1. Within the `FeaturedProduct.cshtml` view file add the following HTML markup:
+  1. 修改这个文件:
   
         <style>
           .btn-green {
@@ -416,89 +385,62 @@ For this first widget our needs are simple and we will only be putting plain HTM
         <p><a href="~/sprocket-9000" class="btn-green">Click here to view it.</a></p>
 
 ## Placement
-Almost all of the key elements are in place now except for this last one. The configuration inside a driver class tells Orchard *how* to render that content part. Content parts always exist within a larger composite content item. Placement is used to tell Orchard *where* to render these components.
 
-The `placement.info` file goes in the root folder of the module. It is an XML file with a simple structure. You can learn more about the placement.info in [understanding placement.info](Understanding-placement-info) guide.
+最后一步，驱动类增加设置以告诉Orchard如何呈现content part. Placemeng用于告诉Orchard去哪呈现这些组件。
 
-Add the `placement.info` file to your module:
+`placement.info` 文件在模块根目录下。它是个xml文件，可参考[understanding placement.info](Understanding-placement-info)
 
-  1. `Right click` on the module project in the solution explorer.
-  
-  1. Choose `Add`, `New Item` to get to the add item screen:
-  
-     ![](../Attachments/getting-started-with-modules-part-1/placement-addfile.png)
-  
-  1. From the templates categories in the left hand side, choose `General`
-  
-  1. Find `Text File` in the list
-  
-  1. Enter `placement.info` in the **Name:** field.
-  
-  1. Click `OK`
-  
-This module has a single shape so we need to set up a `<Place>` for that shape. 
-
-  1. Add this snippet to the empty placement.info file:
+添加`placement.info`文件，然后添加下面的内容: 
 
         <Placement>
           <Place Parts_FeaturedProduct="Content:1"/>
         </Placement>
+  
 
-The `Content:1` is the zone and priority of that shape. A shape will have several zones defined for it. Typically these include the header, content, meta and footer but they can have any combination of zones defined. In this case the `Content` is the main content area.
+`Content:1`是shape的区域和优先级. 一个shape一般有多个区域。通常包括头部，内容，meta和根部，这些区域可以组合。在这个例子中 `Content` 是主内容区域. 
 
-The priority means that it will be near the top of the content zone. In more complicated modules there could be several shapes. Setting different priorities will let you organize their display order when you want them to be in the same zone. For example, if another shape had a place of `Content:0.5` it would go before it, `Content:15` and it would go after it.
 
-Theme developers can customize these layout preferences by providing their own placement.info and overriding your initial configuration. This lets theme authors customize your module without having to make changes to the actual code. This means when the module is upgraded to a new version the theme developers changes will not be overwritten.
+优先级表示部件会展示在顶部区域. 在一些复杂的模块会有多个shapes。设置不同的优先级可以按顺序组织同一区域的shapes。
+
+
+主题开发者可以在placement.info定义布局。这样主题作者就可以自定义主题而不用修改代码。这表示模块升级到新版本主题开发者不会更新。
 
 ## Trying the module out in Orchard
-Congratulations, you've made it to the pay off, using the module in Orchard!
+最后的几个步骤是启用这个模块然后将部件放置到激活的模板。
 
-The last few steps will enable the module in Orchard and assign the widget to a zone in the active template:
+  1. 编译解决方案
 
-  1. In Visual Studio, press `Ctrl-F5` to start the dev server without debugging mode enabled. 
-
-  1. Log in to the admin dashboard. The login link will be in the footer of the site.
+  1. 登录管理页，进入`Modules` 
   
-  1. Click `Modules` in the navigation menu.
-  
-  1. The first item in the list should be our module, `Orchard.LearnOrchard.FeaturedProduct`:
-  
-     ![](../Attachments/getting-started-with-modules-part-1/enable-module.png)
-  
-     Click `Enable` to activate the plugin:
-     
-     ![](../Attachments/getting-started-with-modules-part-1/enabled-module.png)
-
-  1. You can now add the Widget to a layer in the site. Click `Widgets` from the navigation menu.
+  1. 现在可以将部件添加到网站，进入`Widgets`页面。
    
-  1. In the `AsideFirst` section of the Widgets page click the `Add` button:
+  1. 在 `AsideFirst` 点击 `Add` button:
    
      ![](../Attachments/getting-started-with-modules-part-1/activate-addtolayer.png)
      
-  1. The `Featured Product Widget` will be in the list, click the item to select it:
+  1.  `Featured Product Widget`会在列表中 :
   
      ![](../Attachments/getting-started-with-modules-part-1/activate-featuredproductwidget.png)
 
-  1. You can leave most of the `Widget` settings on their defaults. Just set the `Title` to `Featured Product`:
+  1. 可以保留默认设置，可以设置 `Title` to `Featured Product`:
   
      ![](../Attachments/getting-started-with-modules-part-1/activate-widgettitle.png)
 
-  1. Click `Save` at the bottom of the page.
+  1. 点击 `Save` .
   
-If you go back to the main site now you will see the module in the site:
+回到主页，可以看到这个模块在站点里
 
 ![](../Attachments/getting-started-with-modules-part-1/enable-viewmodule.png)
 
-We haven't created a page for the Sprocket 9000 so clicking the button will give a 404 at the moment.
+
+我们创建页面，所以点击后会提示404. 
+
 
 ## Download the code for this lesson
-You can download a copy of the module so far at this link:
+可以在这下载代码:
 
   * [Download Orchard.LearnOrchard.FeaturedProduct-Part1-v1.0.zip](../Attachments/getting-started-with-modules-part-1/Orchard.LearnOrchard.FeaturedProduct-Part1-v1.0.zip)
   
-To use it in Orchard simply extract the archive into the modules directory at `.\src\Orchard.Web\Modules\`.
-
-> For Orchard to recognize it the folder name should match the name of the module. Make sure that the folder name is `Orchard.LearnOrchard.FeaturedProduct` and then the modules files are located directly under that. 
 
 ## Conclusion
 This first guide in the module introduction course has shown the main components of a module.

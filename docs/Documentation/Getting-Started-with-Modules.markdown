@@ -4,15 +4,15 @@ It will teach you some of the basic components of module development and also en
 
   - **[Getting Started with Modules - Part 1](Getting-Started-with-Modules-Part-1) - Static Widget** 
     
-    This first part walks you through creating a static widget and introduces you to many of the classes that form the basis of module development in Orchard.
+    第一部分创建一个静态部件(widget),介绍模块开发的多个类。
 
   - **[Getting Started with Modules - Part 2](Getting-Started-with-Modules-Part-2) - Dynamic Widget**
   
-    The second part of the course explains how you can refine the widget to implement settings that are configurable via the admin dashboard.
+    第二部分讲解如何显示在管理中设置部件(widget)
     
   - **[Getting Started with Modules - Part 3](Getting-Started-with-Modules-Part-3) - Orchard API**
     
-    The third part examines Orchard at an API level. You will learn how to work with content items in code and make decisions based on the values of its fields. You will also learn about some of the support classes which make this easier. 
+    第三部分展示Orchard API, 将学习到如何操作content items.
   
   - **[Getting Started with Modules - Part 4](Getting-Started-with-Modules-Part-4) - Best Practices**
   
