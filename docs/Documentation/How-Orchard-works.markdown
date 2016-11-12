@@ -32,45 +32,46 @@ The Orchard CMS is built on existing frameworks and libraries. Here are a few of
 - [ASP.NET MVC](http://www.asp.net/mvc): ASP.NET MVC is a modern Web development framework that encourages separation of concerns.
 - [NHibernate](http://nhforge.org/): NHibernate is an object-relational mapping tool. It handles the persistence of the Orchard content items to the database and considerably simplifies the data model by removing altogether the concern of persistence from module development. You can see examples of that by looking at the source code of any core content type, for example Pages.
 - [Autofac](http://code.google.com/p/autofac/): Autofac is an [IoC container](http://en.wikipedia.org/wiki/Inversion_of_control). Orchard makes heavy use of dependency injection. Creating an injectable Orchard dependency is as simple as writing a class that implements IDependency or a more specialized interface that itself derives from IDependency (a marker interface), and consuming the dependency is as simple as taking a constructor parameter of the right type. The scope and lifetime of the injected dependency will be managed by the Orchard framework. You can see examples of that by looking at the source code for IAuthorizationService, RolesBasedAuthorizationService and XmlRpcHandler.
-- [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/): we use Castle for dynamic proxy generation.
+- [Castle Dynamic Proxy](http://www.castleproject.org/projects/dynamicproxy/): 生成动态代理.
 
 The Orchard application and framework are built on top of these foundational frameworks as additional layers of abstraction. They are in many ways implementation details and no knowledge of NHibernate, Castle, or Autofac should be required to work with Orchard.
 
 # Orchard Framework
 
-The Orchard framework is the deepest layer of Orchard. It contains the engine of the application or at least the parts that couldn't be isolated into modules. Those are typically things that even the most fundamental modules will have to rely on. You can think of it as the base class library for Orchard.
 
-## Booting Up Orchard
+Orchard framework是Orchard最底层。它包含应用程序引擎和一些不能隔离到模块的部分. 这些通常基础模块都必须依赖. 可以把它当成Orchard的基础类库.
 
-When an Orchard web application spins up, an Orchard Host gets created. A host is a singleton at the app domain level.
+## Booting Up Orchard(启动Orchard)
 
-Next, the host will get the Shell for the current tenant using the ShellContextFactory. Tenants are instances of the application that are isolated as far as users can tell but that are running within the same appdomain, improving the site density. The shell is a singleton at the tenant level and could actually be said to represent the tenant. It's the object that will effectively provide the tenant-level isolation while keeping the module programming model agnostic about multi-tenancy.
+Orchard应用程序启动时, 将创建一个Orchard Host, 它是一个在应用程序域级的单例. 
 
-The shell, once created, will get the list of available extensions from the ExtensionManager. Extensions are modules and themes. The default implementation is scanning the modules and themes directories for extensions.
+然后, 这个Host将使用ShellContextFactory为当前用户创建Shell. 多用户模式是应用程序的多个实例,实例运行在同一应用程序域 , 实例之间的用户是隔离的. Shell在用户级是个单例且实际上表现给用户. 它是将有效地提供同时保持模块的编程模型的多租户的隔离的对象.
 
-At the same time, the shell will get the list of settings for the tenant from the ShellSettingsManager. The default implementation gets the settings from the appropriate subfolder of `App_Data` but alternative implementations can get those from different places. For example, we have an Azure implementation that is using blob storage instead because `App_Data` is not reliably writable in that environment.
+一旦Shell被创建, 将从ExtensionManager中获取可用扩展列表. 扩展包括模块和主题. 默认实现将检查模块和主题文件夹. 
 
-The shell then gets the CompositionStrategy object and uses it to prepare the IoC container from the list of available extensions for the current host and from the settings for the current tenant. The result of this is not an IoC container for the shell, it is a ShellBlueprint, which is a list of dependency, controller and record blueprints.
+同时, Shell从ShellSettingsManager中获取用户设置列表. 默认从`App_Data`子文件夹中获取这些设置, 但可实现从其他文件夹获取. 
 
-The list of ShellSettings (that are per tenant) and the ShellBluePrint are then thrown into ShellContainerFactory.CreateContainer to get an ILifetimeScope, which is basically enabling the IoC container to be scoped at the tenant level so that modules can get injected dependencies that are scoped for the current tenant without having to do anything specific.
+然后Shell获取CompositionStrategy对象,并从当前Host可用扩展列表和当前用户设置中用它准备IoC容器. 返回的结果并不是一个IoC容器, 是ShellBlueprint, 它是依赖、控制器和记录蓝图. 
 
-## Dependency Injection
+然后将每个用户的ShellSettings列表和ShellBlueprint抛给ShellContainerFactory.CreateContainer, 并获取一个ILifetimeScope, 它使IoC容器作用于用户级, 这样模块就可以为当前用户注入依赖而不需要其他任何指定. 
 
-The standard way of creating injectable dependencies in Orchard is to create an interface that derives from IDependency or one of its derived interfaces and then to implement that interface. On the consuming side, you can take a parameter of the interface type in your constructor. The application framework will discover all dependencies and will take care of instantiating and injecting instances as needed.
+## Dependency Injection(依赖注入)
 
-There are three different possible scopes for dependencies, and choosing one is done by deriving from the right interface:
+在Orchard中标准的注入依赖方式是创建一个继承自IDependency接口或其他已继承的接口, 并实现这个接口. 使用时, 可在构造函数中传入接口参数. 应用程序框架将找到所有依赖并观察实例和注入实例. 
 
-- Request: a dependency instance is created for each new HTTP request and is destroyed once the request has been processed. Use this by deriving your interface from IDependency. The object should be reasonably cheap to create.
-- Object: a new instance is created every single time an object takes a dependency on the interface. Instances are never shared. Use this by deriving from ITransientDependency. The objects must be extremely cheap to create.
-- Shell: only one instance is created per shell/tenant. Use this by deriving from ISingletonDependency. Only use this for objects that must maintain a common state for the lifetime of the shell.
+有三种不用的依赖作用域, 选择合适的接口继承:
 
-### Replacing Existing Dependencies
+- Request： 每个新的Http请求创建一个依赖实例, 请求处理后将销毁. 通过继承IDependency来使用. 这个对象的创建应该合理简单.
+- Object: 接口每次对象依赖都创建一个对象, 对象从不分享. 通过继承ITransientDependency来使用, 这些对象的创建必须非常便宜. 
+- Shell: 每个Shell/用户创建一个实例, 通过继承ISingletonDependency来使用. 只有在shell中保持一个状态才使用. 
 
-It is possible to replace existing dependencies by decorating your class with the OrchardSuppressDependency attribute, that takes the fully-qualified type name to replace as an argument.
+### Replacing Existing Dependencies(替换已存在的依赖)
 
-### Ordering Dependencies
+可通过在给类增加OrchardSuppressDependency属性(Attribute)来标识替换已存在的依赖, 需要将替换类型全称作为参数.
 
-Some dependencies are not unique but rather are parts of a list. For example, handlers are all active at the same time. In some cases you will want to modify the order in which such dependencies get consumed. This can be done by modifying the manifest for the module, using the Priority property of the feature. Here is an example of this:
+### Ordering Dependencies(依赖顺序)
+
+一些依赖并不唯一而是列表的部分. 例如, handlers将同时激活. 在一些例子中需要修改依赖顺序, 可通过修改模块的清单文件，使用Priority属性, 例如:
 
     
     Features:
@@ -85,179 +86,173 @@ Some dependencies are not unique but rather are parts of a list. For example, ha
 
 ## ASP.NET MVC
 
-Orchard is built on ASP.NET MVC but in order to add things like theming and tenant isolation, it needs to introduce an additional layer of indirection that will present on the ASP.NET MVC side the concepts that it expects and that will on the Orchard side split things on the level of Orchard concepts.
+Orchard是构建于ASP.NET MVC, 但为了增加主题和用户隔离等, 需要引入一个额外的间接层,
 
-For example, when a specific view is requested, our LayoutAwareViewEngine kicks in. Strictly speaking, it's not a new view engine as it is not concerned with actual rendering, but it contains the logic to find the right view depending on the current theme and then it delegates the rendering work to actual view engines.
+例如, 一个特定的视图被请求后, LayoutAwareViewEngine将介入. 严格来说, 这并不是一个新的视图引擎，它并不关心实际的呈现, 但它包含根据当前主题来查找正确的视图并委托视图呈现工作给实际的视图引擎.
 
-Similarly, we have route providers, model binders and controller factories whose work is to act as a single entry point for ASP.NET MVC and to dispatch the calls to the properly scoped objects underneath.
+类似, 我们有路由提供程序、模型绑定和控制器工厂作为ASP.NET MVC的单一入口点, 在下面来发送请求适合的作用域对象
 
-In the case of routes, we can have n providers of routes (typically coming from modules) and one route publisher that will be what talks to ASP.NET MVC. The same thing goes for model binders and controller factories.
+例如路由, 我们有n个路由提供程序(一般来自模块), 一个路由发布程序将与ASP.NET MVC交互, 同样的事情也发生在模型绑定和控制器工厂. 
 
-## Content Type System
+## Content Type System(内容类型系统)
 
-Contents in Orchard are managed under an actual type system that is in some ways richer and more dynamic than the underlying .NET type system, in order to provide the flexibility that is necessary in a Web CMS: types must be composed on the fly at runtime and reflect the concerns of content management.
+Orchard的内容管理实际的类型系统, 在某些方式比.NET类型系统更加丰富和动态. 为提供灵活性: 类型必须在运行时构建, 呈现内容管理相关. 
 
-### Types, Parts, and Fields
+### Types, Parts, and Fields(类型, 元件, Fields)
 
-Orchard can handle arbitrary content types, including some that are dynamically created by the site administrator in a code-free manner. Those content types are aggregations of content parts that each deal with a particular concern. The reason for that is that many concerns span more than one content type.
+Orchard能处理任意内容类型, 包括站点管理员创建的动态. 这些内容类型是每个特定内容元件的聚合. 原因是许多内容跨多个内容类型.
 
-For example, a blog post, a product and a video clip might all have a routable address, comments and tags. For that reason, the routable address, comments and tags are each treated in Orchard as a separate content part. This way, the comment management module can be developed only once and apply to arbitrary content types, including those that the author of the commenting module did not know about.
 
-Parts themselves can have properties and content fields. Content fields are also reusable in the same way that parts are: a specific field type will be typically used by several part and content types. The difference between parts and fields resides in the scale at which they operate and in their semantics.
+例如, 一个博客文章, 一个产品, 一个视频剪辑可能都有一个路由地址, 评论和标记. 出于这个原因, 路由地址, 评论和标记在Orchard被当作单独的内容部件. 这种方式, 评论管理模块可只开发一个, 应用到任意内容类型, 包括评论模块作者都不知道.
 
-Fields are a finer grain than parts. For example, a field type might describe a phone number or a coordinate, whereas a part would typically describe a whole concern such as commenting or tagging.
+元件本身包含属性和内容fields. 内容fields同样可以像元件那样复用: 一个特定field类型可用于多种元件和内容类型. 元件和fields的不同在于它们的操作规模和语义.
 
-But the important difference here is semantics: you want to write a part if it implements an "is a" relationship, and you would write a field if it implements a "has a" relationship.
+Fields比元件更优雅一点. 例如, 一个field类型可描述电话号码, 一个坐标, 尽管一个元件通常描述整个评论或标记. 
 
-For example, a shirt **is a** product and it **has a** SKU and a price. You wouldn't say that a shirt has a product or that a shirt is a price or a SKU.
+但重要的不同是语义: 你想写一个元件它实现的是一个 "is a" 关系, field实现的是 "has a" 关系. 
 
-From that you know that the Shirt content type will be made of a Product part, and that the Product part will be made from a Money field named "price" and a String field named SKU.
+例如, 一件衬衫 **is a** 产品, 它 **has a** SKU和价格. 不能说衬衫有一个产品或者衬衫是一个价格或SKU. 
 
-Another difference is that you have only one part of a given type per content type, which makes sense in light of the "is a" relationship, whereas a part can have any number of fields of a given type. Another way of saying that is that fields on a part are a dictionary of strings to values of the field's type, whereas the content type is a list of part types (without names).
+这样你就知道这件衬衫内容类型是有产品元件组成, 这个产品元件由一个名为"price"的Money字段和一个名为"SKU"的字符串字段.
 
-This gives another way of choosing between part and field: if you think people would want more than one instance of your object per content type, it needs to be a field.
+另一个不同是每个内容类型都只有一个给定的类型, 这样就讲得通它是"is a" 关系, 尽管一个元件可含有任意数量的给定类型字段. 另一种说法,元件的字段是一个由字段类型字符串值字典, 尽管内容类型是一个元件类型列表.
 
-### Anatomy of a Content Type
+还有一种如何选择元件和字段的方式: 如果你想每个内容类型多过一个对象实例, 那就需要的是字段.
 
-A content type, as we've seen, is built from content parts. Content parts, code-wise, are typically associated with:
 
-- a Record, which is a POCO representation of the part's data
-- a model class that is the actual part and that derives from `ContentPart<T>` where T is the record type
-- a repository. The repository does not need to be implemented by the module author as Orchard will be able to just use a generic one.
-- handlers. Handlers implement IContentHandler and are a set of event handlers such as OnCreated or OnSaved. Basically, they hook onto the content item's lifecycle to perform a number of tasks. They can also participate in the actual composition of the content items from their constructors. There is a Filters collection on the base ContentHandler that enable the handler to add common behavior to the content type.  
-For example, Orchard provides a StorageFilter that makes it very easy to declare how persistence of a content part should be handled: just do `Filters.Add(StorageFilter.For(myPartRepository));` and Orchard will take care of persisting to the database the data from myPartRepository.  
-Another example of a filter is the ActivatingFilter that is in charge of doing the actual welding of parts onto a type: calling `Filters.Add(new ActivatingFilter<BodyAspect>(BlogPostDriver.ContentType.Name));` adds the body content part to blog posts.
-- drivers. Drivers are friendlier, more specialized handlers (and as a consequence less flexible) and are associated with a specific content part type (they derive from `ContentPartDriver<T>` where T is a content part type). Handlers on the other hand do not have to be specific to a content part type. Drivers can be seen as controllers for a specific part. They typically build shapes to be rendered by the theme engine.
+### Anatomy of a Content Type(一个内容类型剖析)
+
+内容类型由内容元件构成. 内容元件从代码角度来说通常与之联系的包括:
+
+- 记录, 元件数据POCO对象
+- 模型类, 实际元件, 继承自`ContentPart<T>`, 其中 T 是上述记录
+- 仓储. 仓储不需要模块作者实现, Orchard使用了一个泛型仓储.
+- handlers. 实现自IContentHandler, 一组事件处理如OnCreated,OnSaved. 总体来说, handlers介入内容生命周期以完成一些任务. 也可以在内容构造器中参与实际内容. 在基类ContentHandler中包含一个过滤器集合, 允许handler为内容类型添加一般行为. 例如, Orchard有一个StorageFilter, 它使内容元件声明持久化变的非常简单: 只需要t添加代码`Filters.Add(StorageFilter.For(myPartRepository));` ,Orchard将会处理数据的持久化. 另一个过滤器例子, ActivatingFilter负责元件组合成一个内容类型: 请求`Filters.Add(new ActivatingFilter<BodyAspect>(BlogPostDriver.ContentType.Name));` 增加内容元件主体
+
+- 驱动. 驱动比较友好, 更加专注的handlers(因此减少了灵活性), 驱动与特定的内容元件关联. 继承自`ContentPartDriver<T>`(T为内容元件类型). Handlers并不需要指定内容元件类型. 驱动可以看成特定元件的控制器, 他们通常构建shapes来通过主题引擎呈现. 
 
 ## Content Manager
-All contents are accessed in Orchard through the ContentManager object, which is how it becomes possible to use contents of a type you don't know in advance.
 
-ContentManager has methods to query the content store, to version contents and to manage their publication status.
+所有的内容都可以通过ContentManager对象访问到. ContentManager有方法查询内容, 查看内容和管理发布状态. 
 
-## Transactions
+## Transactions(事务)
 
-Orchard is automatically creating a transaction for each HTTP request. That means that all operations that happen during a request are part of an "ambient" transaction. If code during that request aborts that transaction, all data operations will be rolled back. If the transaction is never explicitly cancelled on the other hand, all operations get committed at the end of the request without an explicit commit.
+Orchard自动为每个HTTP请求创建一个事务. 这表示所有请求期间的操作都在事务中. 如果请求中代码取消事务, 所有的数据操作都将回滚. 如果事务没有被其他方式显式取消, 所有操作都将最请求最后提交.
 
 
-## Request Lifecycle
+## Request Lifecycle(请求生命周期)
 
+这部分, 我们举个例子: 请求一个博客文章. 
 In this section, we'll take the example of a request for a specific blog post.
 
-When a request comes in for a specific blog post, the application first looks at the available routes that have been contributed by the various modules and finds the blog module's matching route. The route can then resolve the request to the blog post controller's item action, which will look up the post from the content manager. The action then gets a Page Object Model (POM) from the content manager (by calling BuildDisplay) based on the main object for that request, the post that was retrieved from the content manager.
+当一个请求到达后, 应用第一次检查可用的各种模块的路由并找到博客模块路由, 而后路由可解析这次博客请求的控制器方法. 然后这个方法从内容管理中(通过请求BuildDisplay)获取页对象模型(POM)
 
-A blog post has its own controller, but that is not the case for all content types. For example, dynamic content types will be served by the more generic ItemController from the Core Routable part. The Display action of the ItemController does almost the same thing that the blog post controller was doing: it gets the content item from the content manager by slug and then builds the POM from the results.
+一个博客文章有自己控制器, 但并不是所有内容类型都是. 例如, 动态内容类型将由更加通用的ItemController负责. ItemController的Display方法与博客控制器做的事情几乎一样: 从内容管理获取内容并根据结果构建POM.
 
-The layout view engine will then resolve the right view depending on the current theme and using the model's type together with Orchard conventions on view naming.
+布局视图引擎将根据当前主题找出正确的视图然后将模型与Orchard组合一起.
 
-Within the view, more dynamic shape creation can happen, such as zone definitions.
+在视图里, 更多动态shape可创建, 如区域定义.
 
-The actual rendering is done by the theme engine that is going to find the right template or shape method to render each of the shapes it encounters in the POM, in order of appearance and recursively.
+实际呈现视图由主题引擎来完成, 找到正确的模板或外形方法并按外观顺序递归渲染每个外形.
 
-## Widgets
+## Widgets(小部件)
 
-Widgets are content types that have the Widget content part and the widget stereotype. Like any other content types, they are composed of parts and fields. That means that they can be edited using the same edition and rendering logic as other content types. They also share the same building blocks, which means that any existing content part can potentially be reused as part of a widget almost for free.
+小部件是含有Widget内容和Widget样子的内容类型. 像其他内容类型一样, 也是有部件和字段组成. 这表示小部件可和其他内容类型使用同样版本和渲染逻辑. 他们同样分享构建块, 任何已存在的部件都可以作为小部件的一部分.
 
-Widgets are added to pages through widget layers. Layers are sets of widgets. They have a name, a rule that determines what pages of the site they should appear on, and a list of widgets and associated zone placement and ordering, and settings.
+小部件通过widget层添加到页中. 层是一些小部件集, 他们有名称, 规则来决定该在哪个页上显示, 小部件与区域的顺序和设置相关.
 
-The rules attached to each of the layers are expressed with IronRuby expressions. Those expressions can use any of the IRuleProvider implementations in the application. Orchard ships with two out of the box implementations: url and authenticated.
+每个层的规则是由IronRuby表达式来表达. 这些表达式可使用任何已IRuleProvider实现. Orchard已经有两个此类实现: url和验证.
 
 ## Site Settings
 
-A site in Orchard is a content item, which makes it possible for modules to weld additional parts. This is how modules can contribute site settings.
+Orchard站点是一个内容项, 它使模块与部件紧密结合成为可能. 这是模块如何共享站点设置. 站点设置是按用户隔离. 
 
-Site settings are per tenant.
+## Event Bus(事件总线)
 
-## Event Bus
+Orchard与之模块通过为依赖创建实现接口来公开了延伸点, 这些接口实现可被注入. 
 
-Orchard and its modules expose extensibility points by creating interfaces for dependencies, implementations of which can then get injected.
+接入延伸点可通过实现接口, 或实现一个具有相同名称和方法的接口. 换句话说, Orchard并不严格要求强类型接口对应, 它使接入扩展延伸点并不需要引入. 
 
-Plugging into an extensibility point is done either by implementing its interface, or by implementing an interface that has the same name and the same methods. In other words, Orchard does not require strictly strongly typed interface correspondence, which enables plug-ins to extend an extensibility point without taking a dependency on the assembly where it's defined.
+这只是一个Orchard事件总线实现. 当一个扩展点请求注入实现, 一个消息将在事件总线上获取发布. 一个对象监听着这个事件总线,发出消息到类中的继承方法.
 
-This is just one implementation of the Orchard event bus. When an extensibility point calls into injected implementations, a message gets published on the event bus. One of the objects listening to the event bus dispatches the messages to the methods in classes that derive from an interface appropriately named.
+## Commands(命令)
 
-## Commands
+Orchard里多个操作可以通过命令行来完成与管理页一样的. 通过实现ICommandHandler并标记命令名称属性(attribute)开放命令. 
 
-Many actions on an Orchard site can be performed from the command line as well as from the admin UI. These commands are exposed by the methods of classes implementing ICommandHandler that are decorated with a CommandName attribute.
+Orchard命令行工具在运行时通过模拟Web站点环境应用反射检查程序集来发现可用命令. 
 
-The Orchard command line tool discovers available commands at runtime by simulating the web site environment and inspecting the assemblies using reflection. The environment in which the commands run is as close as possible to the actual running site.
+## Search and Indexing(搜索和索引)
 
-## Search and Indexing
+搜索和索引默认使用Lucene实现, 不过可以使用其他索引引擎替换默认实现. 
 
-Search and indexing are implemented using Lucene by default, although that default implementation could be replaced with another indexing engine.
+## Caching(缓存)
 
-## Caching
+Orchard缓存依赖ASP.NET缓存, 但Orchard通过ICache开放了一个API, 调用这个方法. 使用Orchard的这个API的主要优势在它是用户隔离的.  
 
-The cache in Orchard relies on the ASP.NET cache, but we expose a helper API that can be used through a dependency of type ICache, by calling the Get method. Get takes a key and a function that can be used to generate the cache entry's value if the cache doesn't already contains the requested entry.
+## File Systems(文件系统)
 
-The main advantage of using the Orchard API for caching is that it works per tenant transparently.
+Orchard里的文件系统是抽象的, 存储可被映射到物理文件系统或Azure二进制存储. 
 
-## File Systems
+## Users and Roles(用户和角色)
 
-The file system in Orchard is abstracted so that storage can be directed to the physical file system or to an alternate storage such as Azure blob storage, depending on the environment. The Media module is an example of a module that uses that abstracted file system.
+Users也是内容项(虽然不能路由到), 可在profile模块中扩展字段. 
+角色是内容部件与用户紧密结合. 
 
-## Users and Roles
+## Permissions(权限)
 
-Users in Orchard are content items (albeit not routable ones) which makes it easy for a profile module for example to extend them with additional fields.
-Roles are a content part that gets welded onto users.
+每个模块可暴露一系列权限, 同时这些权限如何默认授权到Orchard默认角色中. 
 
-## Permissions
+## Tasks(任务)
 
-Every module can expose a set of permissions as well as how those permissions should be granted by default to Orchard's default roles.
+模块可通过调用IScheduledTaskManager的实现类的CreateTask方法安排任务. 任务通过实现IScheduledTaskHandler来执行. 这个方法检查任务类型名称并决定是否处理. 
+任务可运行在ASP.NET线程池里的独立线程. 
 
-## Tasks
+## Notifications(通知)
 
-Modules can schedule tasks by calling CreateTask on a dependency of type IScheduledTaskManager. The task can then be executed by implementing IScheduledTaskHandler. The Process method can examine the task type name and decide whether to handle it.
+模块可通过INotifier实现类的方法来显示消息到管理视图. 多个通知做作为任何请求的一部分. 
 
-Tasks are being run on a separate thread that comes from the ASP.NET thread pool.
+## Localization(本地化)
+本地化通过调用`@T("This string can be localized")`来请求. 查看[Using the localization helpers](Using-the-localization-helpers)了解更多. Orchard资源管理可从本地PO文件中跟据区域获取资源字符串。
 
-## Notifications
+内容项本地化通过不同的机制: 内容项本地化不同版本根据内容项单独存储在物理路径. 
 
-Modules can surface messages to the admin UI by getting a dependency on INotifier and calling one of its methods. Multiple notifications can be created as part of any request.
+文化管理是根据当前文化区域字符串. 默认实现返回站点设置项, 但可实现从用户资料或浏览器设置中获取. 
 
-## Localization
+## Logging(日志)
 
-Localization of the application and its modules is done by wrapping string resources in a call to the T method: `@T("This string can be localized")`. See [Using the localization helpers](Using-the-localization-helpers) for more details and guidelines. Orchard's resource manager can load localized resource strings from PO files located in specific places in the application.
-
-Content item localization is done through a different mechanism: localized versions of a content item are physically separate content items that are linked together by a special part.
-
-The current culture to use is determined by the culture manager. The default implementation returns the culture that has been configured in site settings, but an alternate implementation could get it from the user profile or from the browser's settings.
-
-## Logging
-
-Logging is done through a dependency of type ILogger. Different implementations can send the log entries to various storage types. Orchard comes with an implementation that uses [Castle.Core.Logging](https://github.com/castleproject/Windsor/blob/master/docs/logging-facility.md) for logging.
+日志通过ILogger的实现来完成. 不同的实现可发送日志实体到不同的存储类型. Orchard使用[Castle.Core.Logging](https://github.com/castleproject/Windsor/blob/master/docs/logging-facility.md)日志.
 
 # Orchard Core
 
-The Orchard.Core assembly contains a set of modules that are necessary for Orchard to run. Other modules can safely take dependencies on these modules that will always be available.
+Orchard.Core程序集包含一系列Orchard必须运行的模块. 其他模块可安全的引用这些模块. 
 
-Examples of core modules are feeds, navigation or routable.
+例如,Core模块有feeds, navigation, routable.
 
-# Modules
-The default distribution of Orchard comes with a number of built-in modules such as blogging or pages, but third party modules are being built as well.
+# Modules(模块)
 
-A module is just an ASP.NET MVC area with a manifest.txt file that is extending Orchard.
+Orchard默认内置了一些模块(博客, 页面), 但第三方模块也可生成. 
 
-A module typically contains event handlers, content types and their default rendering templates as well as some admin UI.
+模块是ASP.NET MVC Area与mainifes.txt文件的Orchard模块
 
-Modules can be dynamically compiled from source code every time a change is made to their csproj file or to one of the files that the csproj file references. This enables a "notepad" style of development that does no require explicit compilation by the developer or even the use of an IDE such as Visual Studio.
+模块通常包含事件处理, 内容类型和其他模块呈现模块.
 
-Modules must be placed in the Modules folder (Orchard.Web/Modules/MyModule) and the folder name *must* match the name of the compiled DLL produced by the project.  So, if you have a custom module project called My.Custom.Module.csproj and it compiles to My.Custom.Module.dll, then the module root folder must be named My.Custom.Module. [~/Modules/My.Custom.Module/]
+模块动态每次修改后从源代码编译. 
 
-# Themes
+模块必须放置在Modules文件夹(Orchard/web/Modules/newModule),且文件夹名称必须与编译后dll名相同. 
 
-It is a basic design principle in Orchard that all the HTML that it produces can be replaced from themes, including markup produced by modules. Conventions define what files must go where in the theme's file hierarchy.
+# Themes(主题)
 
-The whole rendering mechanism in Orchard is based on shapes. The theme engine's job is to find the current theme and given that theme determine what the best way to render each shape is. Each shape can have a default rendering that may be defined by a module as a template in the views folder or as a shape method in code. That default rendering may be overridden by the current theme. The theme does that by having its own version of a template for that shape or its own shape method for that shape.
+Orchard基本设计原则是所有生成的HTML都可以用主题替换, 包括由模块生成的标签. 约定文件必须在主题文件夹有层次.
 
-Themes can have a parent, which enables child themes to be specializations or adaptations of a parent theme. Orchard comes with a base theme called the Theme Machine that has been designed to make it easy to use as a parent theme.
+Orchard渲染机制基础是shapes. 主题引擎的工作是找到当前主题, 并给主题决定最好的渲染每个shape的方式. 每个shape有一个默认渲染定义于模块视图文件夹的模板中或shape代码方法中. 默认渲染可能会被当前主题重写. 主题有自己的模板版本或有shape自己的方法.
 
-Themes can contain code in much the same way modules do: they can have their own csproj file and benefit from dynamic compilation. This enables themes to define shape methods, but also to expose admin UI for any settings they may have.
+主题有上层, 允许子主题特别或适应父主题. Orchard自带一个基本主题叫主题机器, 可使使用父主题设计更加简单.
 
-The selection of the current theme is done by classes implementing IThemeSelector, which return a theme name and a priority for any request. This allows many selectors to contribute to the choice of the theme. Orchard comes with four implementations of IThemeSelector:
+主题可包含代码与模块包含的方式一样: 它们可有自己的csproj文件,有利于动态编译. 这将允行主题定义shape方法, 但同时暴露管理视图的任何设置.
 
-- SiteThemeSelector selects the theme that is currently configured for the tenant or site with a low priority.
-- AdminThemeSelector takes over and returns the admin theme with a high priority whenever the current URL is an admin URL.
-- PreviewThemeSelector overrides the site's current theme with the theme being previewed if the current user is the one that initiated the theme preview.
-- SafeModeThemeSelector is the only selector available when the application is in "safe mode", which happens typically during setup. It has a very low priority.
+当前主题的选择是由IThemeSelector实现类来完成, 它为任何请求返回一个主题名称和优先级. 这允许多选择来贡献给主题选择. Orchard自带了4种ITemeSelector实现: 
 
-An example of a theme selector might be one that promotes a mobile theme when the user agent is recognized to belong to a mobile device.
+- SiteThemeSelector 选择这个主题配置为当前用户或优先级低站点.
+- AdminThemeSelector 接管并返回高优先级admin主题不过当前URL是否是Admin URL.
+- PreviewThemeSelector 重写站点当前预览主题
+- SafeModeThemeSelector 在 "safe mode" 下的唯一选择,这通常是在安装期间. 它的优先级非常低.
